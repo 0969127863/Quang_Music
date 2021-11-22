@@ -10,12 +10,15 @@ const progress = $('#progress')
 const nextBtn = $('.btn-next')
 const prevBtn = $('.btn-prev')
 const randomBtn = $('.btn-random')
+const repeatBtn = $('.btn-repeat')
+const playlist = $('.playlist')
 
 const app = {
     currentIndex: 0
     ,
     isPlaying: false,
     isRandom: false,
+    isRepeat: false,
     songs: [
         { 
             name: 'Đi về nhà',
@@ -61,9 +64,9 @@ const app = {
         },
     ],
     render: function() {
-        const htmls = this.songs.map(song => {
+        const htmls = this.songs.map((song, index) => {
             return `
-            <div class="song">
+            <div class="song ${index === this.currentIndex ? 'active' : ''}" data-index="${index}">
                 <div class="thumb" style="background-image: url('${song.image}')">
                 </div>
                 <div class="body">
@@ -76,7 +79,7 @@ const app = {
             </div>
             `
         })
-        $('.playlist').innerHTML = htmls.join('')
+        playlist.innerHTML = htmls.join('')
     },
     defineProperties: function() {
         Object.defineProperty(this, 'currentSong', {
@@ -148,6 +151,8 @@ const app = {
                 _this.nextSong()
                 audio.play()
             }
+            _this.activeSong()
+            _this.scrollToActiveSong()
         }
         // Xử lý khi bấm prev
         prevBtn.onclick = function() {
@@ -158,21 +163,58 @@ const app = {
                 _this.prevSong()
                 audio.play()
             }
+            _this.activeSong()
+            _this.scrollToActiveSong()
         }
         randomBtn.onclick = function() {
             _this.isRandom = !_this.isRandom
             randomBtn.classList.toggle('active', _this.isRandom)
+        }
+        // Xử lý lặp lại song
+        repeatBtn.onclick =function() {
+            _this.isRepeat = !_this.isRepeat
+            repeatBtn.classList.toggle('active', _this.isRepeat)
         }
         // Xử lý next song khi audio ended
         audio.onended = function() {
             if(_this.isRandom) {
                 _this.playRandomSong()
                 audio.play()
+            } else if(_this.isRepeat) {
+                audio.play()
             } else {
                 _this.nextSong()
                 audio.play()
             }
+            _this.activeSong()
+            _this.scrollToActiveSong()
         }
+        playlist.onclick = function(e) {
+            const songNode = e.target.closest('.song:not(.active)')
+            const songOptions = e.target.closest('.option')
+            if(songNode || songOptions) {
+                if(songNode) {
+                    _this.currentIndex = songNode.dataset.index
+                    _this.loadCurrentSong()
+                    audio.play()
+                    _this.activeSong()
+                }
+            }
+        }
+    },
+    scrollToActiveSong: function() {
+        $('.song.active').scrollIntoView({
+            behavior: "smooth",
+            block: "nearest"
+        })
+    },
+    activeSong: function(){
+        var loopSongs = $$('.song');
+        for (song of loopSongs){
+                song.classList.remove('active')
+        }
+        const activeSong = loopSongs[this.currentIndex]
+        activeSong.classList.add('active')
     },
     loadCurrentSong: function() {
         heading.textContent = this.currentSong.name
